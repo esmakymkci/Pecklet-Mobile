@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Pecklet",
+    "slug": "pecklet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "https://i.imgur.com/Xns8O85.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF9ED"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "https://i.imgur.com/Xns8O85.jpeg",
+        "backgroundColor": "#FBF9ED"
+      }
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
