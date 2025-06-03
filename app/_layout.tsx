@@ -3,10 +3,9 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { Platform } from "react-native";
 import { ErrorBoundary } from "./error-boundary";
 import AuthGuard from "@/components/auth/AuthGuard";
-import { useAuthStore } from "@/store/auth-store";
+import "../global.css";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -21,7 +20,7 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
   
-  const { isAuthenticated } = useAuthStore();
+  // Note: isAuthenticated is handled by AuthGuard component
 
   useEffect(() => {
     if (error) {

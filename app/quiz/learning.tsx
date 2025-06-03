@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Alert
@@ -14,6 +14,7 @@ import { useAppStore } from '@/store/app-store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProgressBar from '@/components/ui/ProgressBar';
+import TextInput from '@/components/ui/TextInput';
 import { 
   ArrowLeft, 
   CheckCircle,
@@ -103,28 +104,76 @@ export default function LearningScreen() {
   };
   
   const generatePracticeQuestions = (learningWords: LearningWord[]) => {
-    // Generate multiple choice questions
-    const questions = learningWords.map(word => {
-      // Get 3 random incorrect options
-      const incorrectOptions = learningWords
-        .filter(w => w.translation !== word.translation)
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3)
-        .map(w => w.translation);
-      
-      // Add correct answer and shuffle
-      const options = [...incorrectOptions, word.translation]
-        .sort(() => 0.5 - Math.random());
-      
-      return {
-        type: 'multiple-choice',
-        question: `What is the translation of "${word.original}"?`,
-        options,
-        correctAnswer: word.translation,
-      };
+    const questions: any[] = [];
+
+    console.log('Generating practice questions with languages:', { sourceLanguage, targetLanguage });
+    console.log('Learning words:', learningWords);
+
+    // Generate diverse question types for better learning
+    // IMPORTANT: Questions should be asked in the source language (I speak)
+    // and answers should be in the target language (I want to learn)
+    learningWords.forEach((word, index) => {
+      // Most questions should be source→target (asking in the language user speaks)
+      const isSourceToTarget = index % 3 !== 2; // 2 out of 3 questions are source→target
+
+      if (isSourceToTarget) {
+        // Ask question in SOURCE language, answer in TARGET language
+        // This means: "What is the [target language] translation of [source word]?"
+        const incorrectOptions = learningWords
+          .filter(w => w.translation !== word.translation)
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 3)
+          .map(w => w.translation);
+
+        const options = [...incorrectOptions, word.translation]
+          .sort(() => 0.5 - Math.random());
+
+        questions.push({
+          type: 'multiple-choice',
+          question: `What is the ${getLanguageName(targetLanguage)} translation of "${word.original}"?`,
+          options,
+          correctAnswer: word.translation,
+        });
+      } else {
+        // Occasionally ask target→source (recognition question)
+        // This means: "What does [target word] mean in [source language]?"
+        const incorrectOptions = learningWords
+          .filter(w => w.original !== word.original)
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 3)
+          .map(w => w.original);
+
+        const options = [...incorrectOptions, word.original]
+          .sort(() => 0.5 - Math.random());
+
+        questions.push({
+          type: 'multiple-choice',
+          question: `What does "${word.translation}" mean in ${getLanguageName(sourceLanguage)}?`,
+          options,
+          correctAnswer: word.original,
+        });
+      }
     });
-    
-    // Shuffle questions
+
+    // Add some fill-in-the-blank questions if we have examples
+    const wordsWithExamples = learningWords.filter(w => w.examples && w.examples.length > 0);
+    if (wordsWithExamples.length > 0) {
+      const randomWord = wordsWithExamples[Math.floor(Math.random() * wordsWithExamples.length)];
+      if (randomWord.examples && randomWord.examples.length > 0) {
+        const example = randomWord.examples[0];
+        // Create a fill-in-the-blank by replacing the target language word with a blank
+        const blankExample = example.replace(new RegExp(randomWord.translation, 'gi'), '_____');
+
+        questions.push({
+          type: 'fill-blank',
+          question: `Complete the sentence in ${getLanguageName(targetLanguage)}: "${blankExample}"`,
+          correctAnswer: randomWord.translation,
+        });
+      }
+    }
+
+    console.log('Generated questions:', questions);
+    // Shuffle all questions
     setPracticeQuestions(questions.sort(() => 0.5 - Math.random()));
   };
   
@@ -140,15 +189,23 @@ export default function LearningScreen() {
   };
   
   const handleCheckAnswer = () => {
-    if (selectedAnswer === null) return;
-    
+    if (selectedAnswer === null || selectedAnswer === '') return;
+
     const currentQuestion = practiceQuestions[currentQuestionIndex];
-    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-    
+    let isCorrect = false;
+
+    if (currentQuestion.type === 'fill-blank') {
+      // For fill-blank questions, check case-insensitive
+      isCorrect = selectedAnswer.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase().trim();
+    } else {
+      // For multiple choice questions
+      isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+    }
+
     if (isCorrect) {
       setCorrectAnswers(correctAnswers + 1);
     }
-    
+
     setIsAnswerChecked(true);
   };
   
@@ -292,45 +349,69 @@ export default function LearningScreen() {
         
         <Card variant="elevated" style={styles.questionCard}>
           <Text style={styles.questionText}>{currentQuestion.question}</Text>
-          
-          <View style={styles.optionsContainer}>
-            {currentQuestion.options.map((option, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.optionButton,
-                  selectedAnswer === option && styles.selectedOption,
-                  isAnswerChecked && option === currentQuestion.correctAnswer && styles.correctOption,
-                  isAnswerChecked && selectedAnswer === option && 
-                  selectedAnswer !== currentQuestion.correctAnswer && styles.incorrectOption,
-                ]}
-                onPress={() => !isAnswerChecked && setSelectedAnswer(option)}
-                disabled={isAnswerChecked}
-                activeOpacity={0.7}
-              >
-                <Text 
+
+          {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
+            <View style={styles.optionsContainer}>
+              {currentQuestion.options.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
                   style={[
-                    styles.optionText,
-                    selectedAnswer === option && styles.selectedOptionText,
-                    isAnswerChecked && option === currentQuestion.correctAnswer && styles.correctOptionText,
-                    isAnswerChecked && selectedAnswer === option && 
-                    selectedAnswer !== currentQuestion.correctAnswer && styles.incorrectOptionText,
+                    styles.optionButton,
+                    selectedAnswer === option && styles.selectedOption,
+                    isAnswerChecked && option === currentQuestion.correctAnswer && styles.correctOption,
+                    isAnswerChecked && selectedAnswer === option &&
+                    selectedAnswer !== currentQuestion.correctAnswer && styles.incorrectOption,
                   ]}
+                  onPress={() => !isAnswerChecked && setSelectedAnswer(option)}
+                  disabled={isAnswerChecked}
+                  activeOpacity={0.7}
                 >
-                  {option}
+                  <Text
+                    style={[
+                      styles.optionText,
+                      selectedAnswer === option && styles.selectedOptionText,
+                      isAnswerChecked && option === currentQuestion.correctAnswer && styles.correctOptionText,
+                      isAnswerChecked && selectedAnswer === option &&
+                      selectedAnswer !== currentQuestion.correctAnswer && styles.incorrectOptionText,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+
+                  {isAnswerChecked && option === currentQuestion.correctAnswer && (
+                    <CheckCircle size={20} color={COLORS.white} />
+                  )}
+
+                  {isAnswerChecked && selectedAnswer === option &&
+                   selectedAnswer !== currentQuestion.correctAnswer && (
+                    <XCircle size={20} color={COLORS.white} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {currentQuestion.type === 'fill-blank' && (
+            <View style={styles.fillBlankContainer}>
+              <TextInput
+                placeholder="Type your answer..."
+                value={selectedAnswer || ''}
+                onChangeText={text => !isAnswerChecked && setSelectedAnswer(text)}
+                editable={!isAnswerChecked}
+                style={[
+                  styles.fillBlankInput,
+                  isAnswerChecked && selectedAnswer?.toLowerCase() === currentQuestion.correctAnswer.toLowerCase() && styles.correctFillBlank,
+                  isAnswerChecked && selectedAnswer?.toLowerCase() !== currentQuestion.correctAnswer.toLowerCase() && styles.incorrectFillBlank,
+                ]}
+              />
+
+              {isAnswerChecked && selectedAnswer?.toLowerCase() !== currentQuestion.correctAnswer.toLowerCase() && (
+                <Text style={styles.correctAnswerText}>
+                  Correct answer: {currentQuestion.correctAnswer}
                 </Text>
-                
-                {isAnswerChecked && option === currentQuestion.correctAnswer && (
-                  <CheckCircle size={20} color={COLORS.white} />
-                )}
-                
-                {isAnswerChecked && selectedAnswer === option && 
-                 selectedAnswer !== currentQuestion.correctAnswer && (
-                  <XCircle size={20} color={COLORS.white} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+              )}
+            </View>
+          )}
         </Card>
         
         {!isAnswerChecked ? (
@@ -651,6 +732,31 @@ const styles = StyleSheet.create({
   },
   incorrectOptionText: {
     color: COLORS.white,
+    fontWeight: '500',
+  },
+  fillBlankContainer: {
+    marginTop: THEME.spacing.sm,
+  },
+  fillBlankInput: {
+    borderWidth: 1,
+    borderColor: COLORS.lightGray,
+    borderRadius: THEME.borderRadius.md,
+    padding: THEME.spacing.md,
+    fontSize: THEME.typography.fontSizes.md,
+    backgroundColor: COLORS.white,
+  },
+  correctFillBlank: {
+    borderColor: COLORS.success,
+    backgroundColor: `${COLORS.success}10`,
+  },
+  incorrectFillBlank: {
+    borderColor: COLORS.error,
+    backgroundColor: `${COLORS.error}10`,
+  },
+  correctAnswerText: {
+    marginTop: THEME.spacing.sm,
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.error,
     fontWeight: '500',
   },
   resultCard: {

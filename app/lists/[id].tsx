@@ -120,31 +120,65 @@ export default function ListDetailScreen() {
   
   const handleAddWord = async () => {
     if (!newWord.trim()) return;
-    
+
     setIsTranslating(true);
-    
+
     try {
+      console.log(`Translating "${newWord.trim()}" from ${list.sourceLanguage} to ${list.targetLanguage}`);
+
       const translationResult = await translateWord(
         newWord.trim(),
         list.sourceLanguage,
         list.targetLanguage
       );
-      
+
+      console.log('Translation result:', translationResult);
+
       const wordToAdd: Omit<Word, 'id' | 'createdAt' | 'learned'> = {
         original: newWord.trim(),
         translation: translationResult.translation,
         pronunciation: translationResult.pronunciation,
-        examples: translationResult.examples,
+        examples: translationResult.examples || [],
         context: translationResult.context,
       };
-      
+
       addWordToList(list.id, wordToAdd);
       setNewWord('');
       setShowAddWord(false);
+
+      // Show success message
+      Alert.alert(
+        'Word Added',
+        `"${newWord.trim()}" has been translated and added to your list.`,
+        [{ text: 'OK' }]
+      );
     } catch (error) {
+      console.error('Translation error:', error);
       Alert.alert(
         'Translation Error',
-        'Failed to translate the word. Please try again.'
+        `Failed to translate "${newWord.trim()}". The word was added with a placeholder translation. You can edit it manually.`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Add Anyway',
+            onPress: () => {
+              const wordToAdd: Omit<Word, 'id' | 'createdAt' | 'learned'> = {
+                original: newWord.trim(),
+                translation: `[Translation needed]`,
+                pronunciation: '',
+                examples: [],
+                context: 'Please edit to add translation',
+              };
+
+              addWordToList(list.id, wordToAdd);
+              setNewWord('');
+              setShowAddWord(false);
+            },
+          },
+        ]
       );
     } finally {
       setIsTranslating(false);

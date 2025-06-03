@@ -214,18 +214,20 @@ export const useAppStore = create<AppState>()(
         const newList: WordList = {
           ...list,
           id: Date.now().toString(),
-          progress: 0,
-          totalWords: 0,
-          words: [],
+          progress: list.words && list.words.length > 0
+            ? list.words.filter(w => w.learned).length / list.words.length * 100
+            : 0,
+          totalWords: list.words ? list.words.length : 0,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        
+
         return {
           wordLists: [...state.wordLists, newList],
           userStats: {
             ...state.userStats,
             listsCreated: state.userStats.listsCreated + 1,
+            wordsAdded: state.userStats.wordsAdded + (list.words ? list.words.length : 0),
           },
         };
       }),

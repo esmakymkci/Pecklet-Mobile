@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { Home, BookOpen, GraduationCap, BookText, User } from 'lucide-react-native';
+import { Home, BookOpen, GraduationCap, BookText, User, MessageCircle } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -54,6 +54,13 @@ export default function TabLayout() {
         options={{
           title: 'Quiz',
           tabBarIcon: ({ color, size }) => <GraduationCap size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chatbot"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ color, size }) => <MessageCircle size={size} color={color} />,
         }}
       />
       <Tabs.Screen

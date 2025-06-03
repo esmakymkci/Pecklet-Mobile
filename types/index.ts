@@ -1,9 +1,10 @@
 export interface Word {
   id: string;
-  term: string;
-  definition: string;
-  example?: string;
+  original: string;
+  translation: string;
   pronunciation?: string;
+  examples?: string[];
+  context?: string;
   imageUrl?: string;
   learned: boolean;
   createdAt: Date;
@@ -14,7 +15,8 @@ export interface WordList {
   id: string;
   title: string;
   description?: string;
-  language: string;
+  context?: string;
+  sourceLanguage: string;
   targetLanguage: string;
   category?: string;
   tags?: string[];
